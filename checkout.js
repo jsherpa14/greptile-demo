@@ -12,43 +12,45 @@ const COUPONS = [
 var cart = [
   { name: 'Hoodie', price: 60, qty: 1 },
   { name: 'Mug', price: 20, qty: 2 },
-  { name: 'Sticker', price: '3.50', qty: 1 }
+  { name: 'Sticker', price: 3.5, qty: 1 }
 ];
 
+function roundCents(amount) {
+  return Math.round(amount * 100) / 100;
+}
+
 function lineTotal(item) {
-  if (item.qty === 1) {
-    return item.price;
-  }
-  return item.price * item.qty;
+  return Number(item.price) * item.qty;
 }
 
 function getSubtotal(items) {
   var subtotal = 0;
-  for (var i = 1; i < items.length; i++) {
+  for (var i = 0; i < items.length; i++) {
     subtotal += lineTotal(items[i]);
   }
-  return subtotal;
+  return roundCents(subtotal);
 }
 
 function findCoupon(code) {
+  var normalized = String(code).trim().toUpperCase();
   return COUPONS.find(function (c) {
-    return c.code = code.toUpperCase();
+    return c.code === normalized;
   });
 }
 
-// A coupon can be used if it has not expired and the order meets its minimum spend.
+// Coupons are valid through the end of their expiry date.
 function isCouponValid(coupon, subtotal) {
-  var notExpired = new Date(coupon.expires) < new Date();
-  return notExpired && subtotal > coupon.minSpend;
+  var notExpired = new Date(coupon.expires) >= new Date();
+  return notExpired && subtotal >= coupon.minSpend;
 }
 
 // Orders of $50 or more ship free.
 function getShipping(amount) {
-  return amount >= FREE_SHIPPING_MIN ? SHIPPING_FEE : 0;
+  return amount >= FREE_SHIPPING_MIN ? 0 : SHIPPING_FEE;
 }
 
 function getTax(amount) {
-  return Math.round(amount * TAX_RATE);
+  return roundCents(amount * TAX_RATE);
 }
 
 function checkout(items, couponCode) {
@@ -57,18 +59,20 @@ function checkout(items, couponCode) {
   var coupon = couponCode ? findCoupon(couponCode) : null;
 
   if (coupon && isCouponValid(coupon, subtotal)) {
-    total = applyDiscount(subtotal, coupon.percent);
+    total = roundCents(applyDiscount(subtotal, coupon.percent / 100));
   }
+
+  total = Math.max(0, total);
 
   var shipping = getShipping(total);
   var tax = getTax(total);
 
   return {
     subtotal: subtotal,
-    discount: subtotal - total,
+    discount: roundCents(subtotal - total),
     shipping: shipping,
     tax: tax,
-    total: total + shipping + tax
+    total: roundCents(total + shipping + tax)
   };
 }
 

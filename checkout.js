@@ -12,7 +12,7 @@ for (var i = 0; i < cart.length; i++) {
   subtotal += cart[i].price * cart[i].qty;
 }
 
-var total = subtotal;
+var total = applyDiscount(subtotal, coupon.percent);
 
 console.log('Subtotal: $' + subtotal.toFixed(2));
 console.log('Total: $' + total.toFixed(2));
